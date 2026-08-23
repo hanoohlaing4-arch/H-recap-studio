@@ -97,7 +97,7 @@ if is_admin:
       st.sidebar.success(f"Key: {new_key}\nExpiry: {new_exp_date}")
 
 st.subheader(
-    "Video Link (TikTok / YouTube / Facebook / Rednote / Douyin) ထည့်ပါ:"
+    "Video Link (TikTok / YouTube / Facebook / Rednote / Doyin) ထည့်ပါ:"
 )
 video_url = st.text_input("URL Input", placeholder="https://vt.tiktok.com/...")
 
