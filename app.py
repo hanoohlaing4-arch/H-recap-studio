@@ -72,7 +72,10 @@ if is_admin:
 
 st.subheader("Video Link (TikTok / YouTube / Facebook / Rednote / Douyin) ထည့်ပါ:")
 video_url = st.text_input("URL Input", placeholder="https://vt.tiktok.com/...")
+
+# API Key ထည့်ရန်နှင့် ယူနည်း Link
 api_key = st.text_input("Google AI Studio API Key ထည့်ပါ (VIP/Admin မဟုတ်ပါက လိုအပ်ပါသည်):", type="password")
+st.markdown("🔑 API Key မရှိသေးပါက [ဒီနေရာကိုနှိပ်၍ အခမဲ့ယူပါ](https://aistudio.google.com/app/apikey)")
 
 if not (is_admin or is_vip):
     st.warning(f"⚠️ အခမဲ့ အသုံးပြုသူများအတွက် ၁ ရက်လျှင် ၂ ကြိမ်သာ အသုံးပြုနိုင်ပါသည်။ (ယနေ့ သုံးပြီးစီးမှု: {st.session_state.usage_count}/2)")
