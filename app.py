@@ -6,8 +6,13 @@ from gtts import gTTS
 import requests
 import streamlit as st
 
-# yt-dlp ကို နောက်ဆုံးရဗားရှင်းသို့ အလိုအလျောက် Update တင်ရန်
-subprocess.run(["pip", "install", "--upgrade", "yt-dlp"])
+# yt-dlp ကို GitHub repository ကနေ တိုက်ရိုက် Latest Version အဖြစ် အမြဲ Update တင်ရန်
+subprocess.run([
+    "pip",
+    "install",
+    "--upgrade",
+    "https://github.com/yt-dlp/yt-dlp/archive/master.tar.gz",
+])
 import yt_dlp
 
 st.set_page_config(
@@ -150,6 +155,7 @@ if st.button("🚀 Process & Generate Voiceover"):
           "outtmpl": input_file,
           "quiet": True,
           "no_warnings": True,
+          "extractor_args": {"tiktok": {"webpage_download": True}},
           "http_headers": {
               "User-Agent": (
                   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
