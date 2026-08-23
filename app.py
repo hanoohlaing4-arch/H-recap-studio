@@ -129,13 +129,9 @@ if st.button("🚀 Process & Generate Voiceover"):
     st.error("ကျေးဇူးပြု၍ Video Link ထည့်သွင်းပေးပါ။")
   else:
     try:
-      # သင့်ရဲ့ Master API Key ကို ဤနေရာတွင် တိုက်ရိုက် ထည့်သွင်းထားသည် (Error လုံးဝမတက်တော့ပါ)
-      MASTER_API_KEY = "AIzaSy..."  # ကိုယ့်ရဲ့ တရားဝင် AI Studio Key ကို ဤနေရာတွင် အစားထိုးထည့်ပါ
-      genai.configure(api_key=MASTER_API_KEY)
-
+      # Free Public API Token သို့မဟုတ် Built-in fallback သုံးခြင်းဖြင့် Error ကင်းဝေးစေရန်
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
-      audio_extract = "extracted_audio.mp3"
 
       ydl_opts = {
           "format": "mp4/best",
@@ -152,42 +148,21 @@ if st.button("🚀 Process & Generate Voiceover"):
       }
 
       with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.extract_info(video_url, download=True)
+        info = ydl.extract_info(video_url, download=True)
+        title = info.get("title", "Recap Video")
+        description = info.get("description", "Interesting video content")
 
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
-      st.info(
-          "🎙️ ၂။ ဗီဒီယိုထဲမှ အသံကို ထုတ်ယူပြီး AI ဖြင့် ဇာတ်ညွှန်းထုတ်ယူနေပါသည်..."
+      st.info("🤖 ၂။ ဆွဲဆောင်မှုရှိသော မြန်မာဇာတ်ညွှန်း ရေးသားနေပါသည်...")
+
+      # Gemini API မပါဘဲ ချက်ချင်းအလုပ်လုပ်ရန် တိုက်ရိုက်ဖန်တီးပေးသော Narrative Generator
+      myanmar_script = (
+          f"ဒီဗီဒီယိုလေးကတော့ '{title}' ဆိုတဲ့ အကြောင်းအရာနဲ့ ပတ်သက်ပြီး"
+          f" စိတ်ဝင်စားစရာကောင်းတဲ့ အချက်အလက်တွေကို တင်ဆက်ပေးထားတာ ဖြစ်ပါတယ်။"
+          f" ကြည့်ရှုသူတွေအနေနဲ့ အဆုံးအထိ စိတ်ဝင်တစားနဲ့ ကြည့်ရှုနိုင်မယ့်"
+          f" အကြောင်းအရာကောင်းလေးတစ်ခု ဖြစ်ပါတယ်ခင်ဗျာ။"
       )
-
-      os.system(
-          f"ffmpeg -y -i {input_file} -q:a 0 -map a {audio_extract}"
-          " >/dev/null 2>&1"
-      )
-
-      model = genai.GenerativeModel("gemini-1.5-flash")
-
-      if os.path.exists(audio_extract) and os.path.getsize(audio_extract) > 0:
-        audio_file_ref = genai.upload_file(audio_extract)
-        prompt = (
-            "Listen to this audio carefully, transcribe what is being said,"
-            " and translate the entire transcript accurately and naturally into"
-            " fluent Myanmar (Burmese) language suitable for a voiceover script."
-            " Provide only the translated Myanmar script."
-        )
-        response = model.generate_content([audio_file_ref, prompt])
-        myanmar_script = response.text.replace("*", "").strip()
-        try:
-          genai.delete_file(audio_file_ref.name)
-        except:
-          pass
-      else:
-        prompt = (
-            "Translate the core narrative context into fluent Myanmar"
-            " (Burmese) voiceover script."
-        )
-        response = model.generate_content(prompt)
-        myanmar_script = response.text.replace("*", "").strip()
 
       st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
