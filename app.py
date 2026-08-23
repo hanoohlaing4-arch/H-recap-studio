@@ -97,7 +97,7 @@ if is_admin:
       st.sidebar.success(f"Key: {new_key}\nExpiry: {new_exp_date}")
 
 st.subheader(
-    "Video Link (TikTok / YouTube / Facebook / Rednote / Doyin) ထည့်ပါ:"
+    "Video Link (TikTok / YouTube / Facebook / Rednote / Douyin) ထည့်ပါ:"
 )
 video_url = st.text_input("URL Input", placeholder="https://vt.tiktok.com/...")
 
@@ -133,20 +133,8 @@ if st.button("Generate Recap"):
       if api_key:
         genai.configure(api_key=api_key)
 
-      # Gemini Model နာမည်များကို အလိုအလျောက် စစ်ဆေးပြီး အဆင်ပြေရာ ရွေးချယ်ပေးမည့် စနစ်
-      model_to_use = "gemini-2.5-flash"
-      try:
-        available_models = [
-            m.name
-            for m in genai.list_models()
-            if "generateContent" in m.supported_generation_methods
-        ]
-        if available_models:
-          model_to_use = available_models[0]
-      except Exception:
-        pass
-
-      model = genai.GenerativeModel(model_to_use)
+      # Model အသစ် (gemini-3.6-flash) သို့ ပြောင်းလဲထားသည်
+      model = genai.GenerativeModel("gemini-3.6-flash")
 
       st.info("Video အချက်အလက်များ ရယူနေပါသည်...")
       title, description = "", ""
