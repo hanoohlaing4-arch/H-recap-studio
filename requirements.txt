@@ -2,4 +2,5 @@ streamlit
 yt-dlp
 google-generativeai
 gtts
+moviepy
 requests
