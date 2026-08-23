@@ -6,7 +6,7 @@ from gtts import gTTS
 import requests
 import streamlit as st
 
-# yt-dlp ကို GitHub repository ကနေ တိုက်ရိုက် Latest Version အဖြစ် အမြဲ Update တင်ရန်
+# yt-dlp ကို နောက်ဆုံးရဗားရှင်းသို့ အလိုအလျောက် Update တင်ရန်
 subprocess.run([
     "pip",
     "install",
@@ -168,16 +168,22 @@ if st.button("🚀 Process & Generate Voiceover"):
         info = ydl.extract_info(video_url, download=True)
         title = info.get("title", "Video")
         description = info.get("description", "")
+        # ဗီဒီယိုထဲပါရှိသော အညွှန်းစာသားအပြည့်အစုံ (Transcript/Subtitles ရှိလျှင် ယူရန်)
+        subtitles = info.get("subtitles", "")
 
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
-      st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို တိုတိုနှင့်တိကျစွာ မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
-      prompt = (
-          "Summarize and translate the core storyline into a concise, natural"
-          " Myanmar voiceover script (strictly short sentences matching the"
-          " video flow, no extra unnecessary fluff):\nTitle:"
-          f" {title}\nDescription: {description}"
-      )
+      st.info("🤖 ၂။ AI ဖြင့် ဗီဒီယိုအကြောင်းအရာကို တိကျမှန်ကန်စွာ မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
+
+      # အပိုအလိုမရှိစေဘဲ တိကျသေချာသော Prompt အသစ်
+      prompt = f"""
+      You are a professional video translator. Translate the exact meaning of this video title and description into natural, fluent Myanmar (Burmese). 
+      Do not add extra information or fluff. Keep it concise, accurate, and faithful to the original content so it matches the video context closely.
+      
+      Title: {title}
+      Description: {description}
+      """
+
       response = model.generate_content(prompt)
       myanmar_script = response.text.replace("*", "").strip()
 
@@ -192,7 +198,7 @@ if st.button("🚀 Process & Generate Voiceover"):
       tts.save(audio_file)
       st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
 
-      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် မြန်မာအသံဖိုင် (တိုက်ရိုက်ဖွင့်ရန်/ဒေါင်းရန်):")
+      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် မြန်မာအသံဖိုင်:")
       if os.path.exists(input_file):
         st.video(input_file)
       if os.path.exists(audio_file):
