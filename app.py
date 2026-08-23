@@ -31,8 +31,8 @@ st.sidebar.title("👑 VIP / Admin Panel")
 st.sidebar.markdown("### 💰 VIP ဈေးနှုန်းများ")
 st.sidebar.markdown("""
 * **၁ လ (30 Days):** 35,000 MMK / 250 THB
-* **၃ လ (90 Days):** 75,000 MMK / 650THB
-* **၆ လ (180Days):** 105,000 MMK / 1,000THB
+* **၃ လ (90 Days):** 70,000 MMK / 550THB
+* **၆ လ (180Days):** 105,000 MMK / 820THB
 """)
 
 st.sidebar.markdown("---")
