@@ -6,9 +6,9 @@ import streamlit as st
 import yt_dlp
 
 st.set_page_config(
-    page_title="AI Movie Recap Generator", page_icon="🎬", layout="wide"
+    page_title="AI Movie Recap & Video Studio", page_icon="🎬", layout="wide"
 )
-st.title("🎬 AI Movie Recap Generator")
+st.title("🎬 AI Video Downloader, Translator & Auto-Recap Studio")
 
 ADMIN_KEYS = ["ADMIN123", "JEWAN_MASTER"]
 VIP_KEYS_DATABASE = {"VIP-202608-0001": "2026-08-31"}
@@ -27,8 +27,6 @@ if (
 ALL_VIP_KEYS = {**VIP_KEYS_DATABASE, **st.session_state.purchased_keys}
 
 st.sidebar.title("👑 VIP / Admin Panel")
-
-# VIP ဈေးနှုန်းများ
 st.sidebar.markdown("### 💰 VIP ဈေးနှုန်းများ")
 st.sidebar.markdown("""
 * **၁ လ (30 Days):** 35,000 MMK / 300 THB
@@ -37,7 +35,6 @@ st.sidebar.markdown("""
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 💳 VIP Key ဝယ်ယူရန်")
-
 col1, col2 = st.sidebar.columns(2)
 with col1:
   if os.path.exists("kpay.png"):
@@ -59,9 +56,7 @@ st.sidebar.markdown("---")
 user_key = st.sidebar.text_input(
     "🔑 VIP Key (သို့) Admin Key ထည့်ပါ:", type="password"
 )
-
-is_admin = False
-is_vip = False
+is_admin, is_vip = False, False
 
 if user_key:
   if user_key in ADMIN_KEYS:
@@ -72,14 +67,11 @@ if user_key:
     expire_date = datetime.datetime.strptime(expire_date_str, "%Y-%m-%d").date()
     if datetime.date.today() <= expire_date:
       is_vip = True
-      st.sidebar.success(
-          f"👑 VIP အဖြစ် အသုံးပြုနိုင်ပါသည်။ (သက်တမ်းကုန်ရက်:"
-          f" {expire_date_str})"
-      )
+      st.sidebar.success(f"👑 VIP သက်တမ်းရှိသည် (ကုန်ရက်: {expire_date_str})")
     else:
       st.sidebar.error("❌ သင်၏ VIP Key မှာ သက်တမ်းကုန်သွားပါပြီ။")
   else:
-    st.sidebar.error("❌ VIP Key / Admin Key မှားယွင်းနေပါသည်။")
+    st.sidebar.error("❌ VIP Key မှားယွင်းနေပါသည်။")
 
 if is_admin:
   st.sidebar.markdown("---")
@@ -96,13 +88,13 @@ if is_admin:
       st.session_state.purchased_keys[new_key] = new_exp_date
       st.sidebar.success(f"Key: {new_key}\nExpiry: {new_exp_date}")
 
-st.subheader(
-    "Video Link (TikTok / YouTube / Facebook / Rednote / Douyin) ထည့်ပါ:"
+st.subheader("🔗 Video Link ထည့်ပါ (TikTok, YouTube, Facebook, etc.)")
+video_url = st.text_input(
+    "URL Input", placeholder="https://www.youtube.com/watch?v=..."
 )
-video_url = st.text_input("URL Input", placeholder="https://vt.tiktok.com/...")
 
 api_key = st.text_input(
-    "Google AI Studio API Key ထည့်ပါ (VIP/Admin မဟုတ်ပါက လိုအပ်ပါသည်):",
+    "Google AI Studio API Key ထည့်ပါ (AI ဘာသာပြန်ရန် လိုအပ်သည်):",
     type="password",
 )
 st.markdown(
@@ -114,15 +106,13 @@ if not (is_admin or is_vip):
   st.warning(
       f"⚠️ အခမဲ့ အသုံးပြုသူများအတွက် ၁ ရက်လျှင် ၂ ကြိမ်သာ"
       f" အသုံးပြုနိုင်ပါသည်။ (ယနေ့ သုံးပြီးစီးမှု: {st.session_state.usage_count}/2)"
-      f" \n\n✨ **၁ လလုံး အကန့်အသတ်မရှိ စိတ်ကြိုက် အသုံးပြုနိုင်ရန် VIP"
-      " ဝယ်ယူပါခင်ဗျာ။**"
+      f" \n\n✨ **၁ လလုံး အကန့်အသတ်မရှိ အသုံးပြုရန် VIP ဝယ်ယူပါ။**"
   )
 
-if st.button("Generate Recap"):
+if st.button("🚀 Process Video (Download & Translate)"):
   if not (is_admin or is_vip) and st.session_state.usage_count >= 2:
     st.error(
-        "❌ ယနေ့အတွက် အခမဲ့သုံးစွဲခွင့် (၂ ကြိမ်) ပြည့်သွားပါပြီ။ ၁ လလုံး"
-        " အကန့်အသတ်မရှိ အသုံးပြုနိုင်ရန် VIP Key ဝယ်ယူပါခင်ဗျာ။"
+        "❌ ယနေ့အတွက် အခမဲ့သုံးစွဲခွင့် ပြည့်သွားပါပြီ။ VIP Key ဝယ်ယူပါ။"
     )
   elif not video_url:
     st.error("ကျေးဇူးပြု၍ Video Link ထည့်သွင်းပေးပါ။")
@@ -133,49 +123,56 @@ if st.button("Generate Recap"):
       if api_key:
         genai.configure(api_key=api_key)
 
-      # Model အသစ် (gemini-3.6-flash) သို့ ပြောင်းလဲထားသည်
       model = genai.GenerativeModel("gemini-3.6-flash")
 
-      st.info("Video အချက်အလက်များ ရယူနေပါသည်...")
-      title, description = "", ""
+      st.info("📥 ၁။ Video ကို Download ဆွဲနေပါသည်...")
+      ydl_opts = {
+          "format": "mp4/best",
+          "outtmpl": "downloaded_video.mp4",
+          "quiet": True,
+          "no_warnings": True,
+      }
 
-      if "tiktok.com" in video_url:
-        tt_res = requests.get(
-            f"https://www.tikwm.com/api/?url={video_url}"
-        ).json()
-        if tt_res.get("code") == 0:
-          title = tt_res["data"].get("title", "TikTok Video")
-          description = title
-        else:
-          raise Exception("TikTok Video ၏ အချက်အလက်များကို ရယူ၍ မရပါ။")
-      else:
-        ydl_opts = {
-            "quiet": True,
-            "no_warnings": True,
-            "format": "best",
-            "user_agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-                " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0"
-                " Safari/537.36"
-            ),
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-          info = ydl.extract_info(video_url, download=False)
-          title = info.get("title", "Video")
-          description = info.get("description", "")
+      with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(video_url, download=True)
+        title = info.get("title", "Video")
+        description = info.get("description", "")
 
-      st.success(f"Video တွေ့ရှိပါသည်: {title}")
-      st.info("AI Recap ရေးသားနေပါသည်...")
+      st.success(f"✅ Video Download အောင်မြင်သည်: {title}")
+
+      st.info(
+          "🤖 ၂။ AI ဖြင့် အကြောင်းအရာများကို ဘာသာပြန်ဆို & Copyright"
+          " ရှောင်ရှားရန် ပြင်ဆင်နေပါသည်..."
+      )
       prompt = (
-          "Please write a comprehensive and engaging movie/video recap based on"
-          " the following title and description in Myanmar language:\nTitle:"
+          "Based on this video title and description, create a catchy"
+          " translated Myanmar voiceover script and summary that avoids"
+          " copyright issues by paraphrasing creatively:\nTitle:"
           f" {title}\nDescription: {description}"
       )
       response = model.generate_content(prompt)
-      st.subheader("📝 Movie Recap Result:")
+
+      st.subheader("📝 AI ဖြင့် ဘာသာပြန်ထားသော ဇာတ်လမ်း / Voiceover Script:")
       st.write(response.text)
+
+      st.info("🎬 ၃။ ဒေါင်းလုဒ်ရယူထားသော ဗီဒီယိုဖိုင်:")
+      if os.path.exists("downloaded_video.mp4"):
+        st.video("downloaded_video.mp4")
+        with open("downloaded_video.mp4", "rb") as file:
+          st.download_button(
+              label="📥 ဗီဒီယိုကို သိမ်းဆည်းရန် (Download Video)",
+              data=file,
+              file_name="processed_video.mp4",
+              mime="video/mp4",
+          )
+      else:
+        st.error("ဗီဒီယိုဖိုင် ရှာမတွေ့ပါ။")
 
       if not (is_admin or is_vip):
         st.session_state.usage_count += 1
+
     except Exception as e:
-      st.error(f"အမှားအယွင်း ရှိပါသည်။ Error: {str(e)}")
+      st.error(
+          f"အမှားအယွင်း ရှိပါသည်။ (Server ကန့်သတ်ချက် သို့မဟုတ် Link"
+          f" မမှန်ကန်ခြင်း ဖြစ်နိုင်သည်) Error: {str(e)}"
+      )
