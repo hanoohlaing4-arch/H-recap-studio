@@ -3,6 +3,7 @@ import os
 import subprocess
 import google.generativeai as genai
 from gtts import gTTS
+from moviepy.editor import AudioFileClip, VideoFileClip
 import requests
 import streamlit as st
 
@@ -113,7 +114,7 @@ if not (is_admin or is_vip):
       f" \n\n✨ **၁ လလုံး အကန့်အသတ်မရှိ အသုံးပြုရန် VIP ဝယ်ယူပါ။**"
   )
 
-if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့် ဗီဒီယိုထုတ်မည်)"):
+if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့် ဗီဒီယိုပေါင်းမည်)"):
   if not (is_admin or is_vip) and st.session_state.usage_count >= 2:
     st.error(
         "❌ ယနေ့အတွက် အခမဲ့သုံးစွဲခွင့် ပြည့်သွားပါပြီ။ VIP Key ဝယ်ယူပါ။"
@@ -127,11 +128,11 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
       if api_key:
         genai.configure(api_key=api_key)
 
-      # အသစ်ပြင်ဆင်ထားသော gemini-3.6-flash ကို ချိတ်ဆက်ခြင်း
       model = genai.GenerativeModel("gemini-3.6-flash")
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
+      output_file = "final_dubbed_video.mp4"
 
       ydl_opts = {
           "format": "mp4/best",
@@ -166,26 +167,39 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
       st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
 
-      st.info("🗣️ ၃။ မြန်မာ AI အသံဖိုင် ဖန်တီးနေပါသည်...")
+      st.info("🗣️ ၃။ မြန်မာ AI အသံဖိုင် ဖန်တီး၍ ဗီဒီယိုနှင့် ပေါင်းနေပါသည်...")
       audio_file = "myanmar_audio.mp3"
-      try:
-        tts = gTTS(text=myanmar_script, lang="my", slow=False)
-        tts.save(audio_file)
-        st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
-      except Exception as gtts_err:
-        st.warning(f"⚠️ Audio Error: {str(gtts_err)}")
 
-      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် အသံဖိုင်:")
-      if os.path.exists(input_file):
-        st.video(input_file)
-      if os.path.exists(audio_file):
-        st.audio(audio_file)
-        with open(audio_file, "rb") as f:
+      # gTTS ဖြင့် အသံဖိုင်ထုတ်ခြင်း
+      tts = gTTS(text=myanmar_script, lang="my", slow=False)
+      tts.save(audio_file)
+
+      # MoviePy ဖြင့် ဗီဒီယိုနှင့် မြန်မာအသံဖိုင်ကို ပေါင်းစပ်ခြင်း
+      video_clip = VideoFileClip(input_file)
+      audio_clip = AudioFileClip(audio_file)
+
+      # ဗီဒီယိုအရှည်အတိုင်း အသံကို ချိန်ညှိခြင်း (သို့မဟုတ် အသံအရှည်အတိုင်း ဗီဒီယိုကို ချိန်ခြင်း)
+      final_clip = video_clip.set_audio(audio_clip)
+      final_clip.write_videofile(
+          output_file,
+          codec="libx264",
+          audio_codec="aac",
+          temp_audiofile="temp-audio.m4a",
+          remove_temp=True,
+          logger=None,
+      )
+
+      st.success("✅ မြန်မာအသံပါသော ဗီဒီယို အောင်မြင်စွာ ထွက်လာပါပြီ။")
+
+      st.subheader("📺 ရလဒ် ဗီဒီယို (မြန်မာအသံပါဝင်သည်):")
+      if os.path.exists(output_file):
+        st.video(output_file)
+        with open(output_file, "rb") as f:
           st.download_button(
-              label="📥 မြန်မာအသံဖိုင်ကို သိမ်းဆည်းရန် (Download MP3)",
+              label="📥 မြန်မာအသံပါ ဗီဒီယိုကို သိမ်းဆည်းရန် (Download MP4)",
               data=f,
-              file_name="Myanmar_Voiceover.mp3",
-              mime="audio/mp3",
+              file_name="Myanmar_Dubbed_Video.mp4",
+              mime="video/mp4",
           )
 
       if not (is_admin or is_vip):
