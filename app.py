@@ -123,21 +123,28 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
       if api_key:
         genai.configure(api_key=api_key)
 
-      # တည်ငြိမ်ပြီး အလုပ်လုပ်သော Gemini Model ကို အသုံးပြုခြင်း
       model = genai.GenerativeModel("gemini-1.5-flash")
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
+
+      # TikTok လင့်ခ်များ Error မတက်အောင် User-Agent ထည့်သွင်းပေးထားခြင်း
       ydl_opts = {
           "format": "mp4/best",
           "outtmpl": input_file,
           "quiet": True,
           "no_warnings": True,
+          "http_headers": {
+              "User-Agent": (
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                  " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              )
+          },
       }
 
       with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
-        title = info.get("title", "Video")
+        title = info.get("title", "TikTok Video")
         description = info.get("description", "")
 
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
@@ -152,32 +159,22 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
       response = model.generate_content(prompt)
       myanmar_script = response.text.replace("*", "").strip()
 
-      st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script (စာတန်းထိုးရန်):")
+      st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
 
       st.info("🗣️ ၃။ မြန်မာအသံထွက် (Voiceover) ဖန်တီးနေပါသည်...")
       audio_file = "myanmar_audio.mp3"
-
       try:
         tts = gTTS(text=myanmar_script, lang="my", slow=False)
         tts.save(audio_file)
         st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
       except Exception as gtts_err:
-        st.warning(
-            f"⚠️ gTTS သုံး၍မရပါ (သို့) အင်တာနက်ချိတ်ဆက်မှု အခက်အခဲရှိသည်:"
-            f" {str(gtts_err)}"
-        )
+        st.warning(f"⚠️ gTTS Error: {str(gtts_err)}")
 
-      st.subheader("📺 ရလဒ် ဗီဒီယို၊ အသံနှင့် စာတန်းထိုးများ:")
-
-      # ဗီဒီယိုပြသခြင်း
+      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် အသံဖိုင်:")
       if os.path.exists(input_file):
-        st.markdown("### 🎬 မူလ ဗီဒီယို:")
         st.video(input_file)
-
-      # အသံဖိုင်နှင့် Download ခလုတ်များ
       if os.path.exists(audio_file):
-        st.markdown("### 🎵 ထွက်လာသော မြန်မာအသံဖိုင် (Voiceover):")
         st.audio(audio_file)
         with open(audio_file, "rb") as f:
           st.download_button(
@@ -191,4 +188,7 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
         st.session_state.usage_count += 1
 
     except Exception as e:
-      st.error(f"အမှားအယွင်း ရှိပါသည်။ Error: {str(e)}")
+      st.error(
+          f"အမှားအယွင်း ရှိပါသည်။ လင့်ခ်မှန်ကန်မှု ရှိမရှိ ထပ်စစ်ဆေးပေးပါ။"
+          f" Error: {str(e)}"
+      )
