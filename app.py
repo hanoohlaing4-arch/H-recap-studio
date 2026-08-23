@@ -1,8 +1,12 @@
 import datetime
 import os
+import subprocess
 import google.generativeai as genai
 import requests
 import streamlit as st
+
+# yt-dlp ကို အမြဲတမ်း နောက်ဆုံးရဗားရှင်းသို့ အလိုအလျောက် Update တင်ရန်
+subprocess.run(["pip", "install", "--upgrade", "yt-dlp"])
 import yt_dlp
 
 st.set_page_config(
@@ -135,7 +139,7 @@ if st.button("🚀 Process Video & Generate Script"):
           "http_headers": {
               "User-Agent": (
                   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                  " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                  " (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
               )
           },
       }
