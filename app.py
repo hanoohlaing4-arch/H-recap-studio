@@ -2,17 +2,18 @@ import datetime
 import os
 import subprocess
 import google.generativeai as genai
+from gtts import gTTS
 import requests
 import streamlit as st
 
-# yt-dlp ကို အမြဲတမ်း နောက်ဆုံးရဗားရှင်းသို့ အလိုအလျောက် Update တင်ရန်
+# yt-dlp ကို နောက်ဆုံးရဗားရှင်းသို့ အလိုအလျောက် Update တင်ရန်
 subprocess.run(["pip", "install", "--upgrade", "yt-dlp"])
 import yt_dlp
 
 st.set_page_config(
-    page_title="AI Video Studio & Script Generator", page_icon="🎬", layout="wide"
+    page_title="AI Video Studio & Auto Dubbing", page_icon="🎬", layout="wide"
 )
-st.title("🎬 AI Video Downloader & Myanmar Script Generator")
+st.title("🎬 AI Video Dubbing & Myanmar Voiceover Studio")
 
 ADMIN_KEYS = ["ADMIN123", "JEWAN_MASTER"]
 VIP_KEYS_DATABASE = {"VIP-202608-0001": "2026-08-31"}
@@ -112,7 +113,7 @@ if not (is_admin or is_vip):
       f" \n\n✨ **၁ လလုံး အကန့်အသတ်မရှိ အသုံးပြုရန် VIP ဝယ်ယူပါ။**"
   )
 
-if st.button("🚀 Process Video & Generate Script"):
+if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့် ဗီဒီယိုထုတ်မည်)"):
   if not (is_admin or is_vip) and st.session_state.usage_count >= 2:
     st.error(
         "❌ ယနေ့အတွက် အခမဲ့သုံးစွဲခွင့် ပြည့်သွားပါပြီ။ VIP Key ဝယ်ယူပါ။"
@@ -126,7 +127,8 @@ if st.button("🚀 Process Video & Generate Script"):
       if api_key:
         genai.configure(api_key=api_key)
 
-      model = genai.GenerativeModel("gemini-2.5-flash")
+      # အသစ်ပြင်ဆင်ထားသော gemini-3.6-flash ကို ချိတ်ဆက်ခြင်း
+      model = genai.GenerativeModel("gemini-3.6-flash")
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
@@ -153,31 +155,37 @@ if st.button("🚀 Process Video & Generate Script"):
 
       st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
       prompt = (
-          "Summarize and translate the core storyline into an engaging Myanmar"
-          " voiceover script suitable for video narration:\nTitle:"
+          "Summarize and translate the core storyline into a short, engaging"
+          " Myanmar voiceover script (around 3-4 short sentences) suitable for"
+          " video narration:\nTitle:"
           f" {title}\nDescription: {description}"
       )
       response = model.generate_content(prompt)
       myanmar_script = response.text.replace("*", "").strip()
 
-      st.success("🎉 အောင်မြင်စွာ ပြီးစီးပါပြီ။")
+      st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
+      st.info(myanmar_script)
 
-      st.subheader("📝 Speechma တွင် အသံထုတ်ရန် မြန်မာဇာတ်ညွှန်း (Copy ကူးပါ):")
-      st.code(myanmar_script, language="text")
-      st.info(
-          "💡 အထက်ပါ စာသားကို Copy ကူးပြီး Speechma (speechma.com) တွင်"
-          " ထည့်သွင်းကာ အသံထုတ်ယူနိုင်ပါသည်။"
-      )
+      st.info("🗣️ ၃။ မြန်မာ AI အသံဖိုင် ဖန်တီးနေပါသည်...")
+      audio_file = "myanmar_audio.mp3"
+      try:
+        tts = gTTS(text=myanmar_script, lang="my", slow=False)
+        tts.save(audio_file)
+        st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
+      except Exception as gtts_err:
+        st.warning(f"⚠️ Audio Error: {str(gtts_err)}")
 
-      st.subheader("📺 ဒေါင်းလုဒ်ရယူထားသော ဗီဒီယိုဖိုင်:")
+      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် အသံဖိုင်:")
       if os.path.exists(input_file):
         st.video(input_file)
-        with open(input_file, "rb") as f:
+      if os.path.exists(audio_file):
+        st.audio(audio_file)
+        with open(audio_file, "rb") as f:
           st.download_button(
-              label="📥 ဗီဒီယိုကို သိမ်းဆည်းရန် (Download Video)",
+              label="📥 မြန်မာအသံဖိုင်ကို သိမ်းဆည်းရန် (Download MP3)",
               data=f,
-              file_name="downloaded_video.mp4",
-              mime="video/mp4",
+              file_name="Myanmar_Voiceover.mp3",
+              mime="audio/mp3",
           )
 
       if not (is_admin or is_vip):
