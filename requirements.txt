@@ -1,4 +1,5 @@
 streamlit
 google-generativeai
 yt-dlp
-pillow
+requests
+gtts
