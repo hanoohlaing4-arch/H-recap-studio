@@ -1,7 +1,7 @@
 import datetime
 import os
-from gtts import gTTS
 import google.generativeai as genai
+from gtts import gTTS
 import requests
 import streamlit as st
 import yt_dlp
@@ -123,7 +123,8 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
       if api_key:
         genai.configure(api_key=api_key)
 
-      model = genai.GenerativeModel("gemini-3.6-flash")
+      # တည်ငြိမ်ပြီး အလုပ်လုပ်သော Gemini Model ကို အသုံးပြုခြင်း
+      model = genai.GenerativeModel("gemini-1.5-flash")
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
@@ -144,31 +145,43 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
       st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
       prompt = (
           "Summarize and translate the core storyline into a short, engaging"
-          " Myanmar voiceover script (around 3-4 sentences) that avoids"
-          " copyright issues:\nTitle:"
+          " Myanmar voiceover script (around 3-4 short sentences) suitable for"
+          " video narration:\nTitle:"
           f" {title}\nDescription: {description}"
       )
       response = model.generate_content(prompt)
       myanmar_script = response.text.replace("*", "").strip()
 
-      st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
-      st.write(myanmar_script)
+      st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script (စာတန်းထိုးရန်):")
+      st.info(myanmar_script)
 
       st.info("🗣️ ၃။ မြန်မာအသံထွက် (Voiceover) ဖန်တီးနေပါသည်...")
-      tts = gTTS(text=myanmar_script, lang="my", slow=False)
       audio_file = "myanmar_audio.mp3"
-      tts.save(audio_file)
 
-      st.success("🎉 အသံဖိုင်နှင့် ဇာတ်ညွှန်း အောင်မြင်စွာ ပြီးစီးပါပြီ။")
+      try:
+        tts = gTTS(text=myanmar_script, lang="my", slow=False)
+        tts.save(audio_file)
+        st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
+      except Exception as gtts_err:
+        st.warning(
+            f"⚠️ gTTS သုံး၍မရပါ (သို့) အင်တာနက်ချိတ်ဆက်မှု အခက်အခဲရှိသည်:"
+            f" {str(gtts_err)}"
+        )
 
-      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် အသံဖိုင်:")
+      st.subheader("📺 ရလဒ် ဗီဒီယို၊ အသံနှင့် စာတန်းထိုးများ:")
+
+      # ဗီဒီယိုပြသခြင်း
       if os.path.exists(input_file):
+        st.markdown("### 🎬 မူလ ဗီဒီယို:")
         st.video(input_file)
+
+      # အသံဖိုင်နှင့် Download ခလုတ်များ
       if os.path.exists(audio_file):
+        st.markdown("### 🎵 ထွက်လာသော မြန်မာအသံဖိုင် (Voiceover):")
         st.audio(audio_file)
         with open(audio_file, "rb") as f:
           st.download_button(
-              label="📥 မြန်မာအသံဖိုင်ကို သိမ်းဆည်းရန် (Download Audio)",
+              label="📥 မြန်မာအသံဖိုင်ကို သိမ်းဆည်းရန် (Download MP3)",
               data=f,
               file_name="Myanmar_Voiceover.mp3",
               mime="audio/mp3",
