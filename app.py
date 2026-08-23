@@ -133,11 +133,20 @@ if st.button("Generate Recap"):
       if api_key:
         genai.configure(api_key=api_key)
 
-      # Model Name ပြင်ဆင်ထားသည့်နေရာ
+      # Gemini Model နာမည်များကို အလိုအလျောက် စစ်ဆေးပြီး အဆင်ပြေရာ ရွေးချယ်ပေးမည့် စနစ်
+      model_to_use = "gemini-2.5-flash"
       try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-      except:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        available_models = [
+            m.name
+            for m in genai.list_models()
+            if "generateContent" in m.supported_generation_methods
+        ]
+        if available_models:
+          model_to_use = available_models[0]
+      except Exception:
+        pass
+
+      model = genai.GenerativeModel(model_to_use)
 
       st.info("Video အချက်အလက်များ ရယူနေပါသည်...")
       title, description = "", ""
