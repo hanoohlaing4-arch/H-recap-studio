@@ -153,7 +153,7 @@ if st.button("🚀 Process & Generate Voiceover"):
       ydl_opts = {
           "format": "mp4/best",
           "outtmpl": input_file,
-          "quiet": True,
+          "quiet": Type,
           "no_warnings": True,
           "extractor_args": {"tiktok": {"webpage_download": True}},
           "http_headers": {
@@ -168,20 +168,18 @@ if st.button("🚀 Process & Generate Voiceover"):
         info = ydl.extract_info(video_url, download=True)
         title = info.get("title", "Video")
         description = info.get("description", "")
-        # ဗီဒီယိုထဲပါရှိသော အညွှန်းစာသားအပြည့်အစုံ (Transcript/Subtitles ရှိလျှင် ယူရန်)
-        subtitles = info.get("subtitles", "")
 
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
-      st.info("🤖 ၂။ AI ဖြင့် ဗီဒီယိုအကြောင်းအရာကို တိကျမှန်ကန်စွာ မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
+      st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို မြန်မာလို ဆွဲဆောင်မှုရှိရှိ ရေးသားနေပါသည်...")
 
-      # အပိုအလိုမရှိစေဘဲ တိကျသေချာသော Prompt အသစ်
+      # ဟတ်ရှ်တက်တွေချည်းဖြစ်နေရင်တောင် အဓိပ္ပာယ်ရှိတဲ့ ဇာတ်လမ်းပုံစံဖြစ်အောင် ဖန်တီးပေးမယ့် Prompt
       prompt = f"""
-      You are a professional video translator. Translate the exact meaning of this video title and description into natural, fluent Myanmar (Burmese). 
-      Do not add extra information or fluff. Keep it concise, accurate, and faithful to the original content so it matches the video context closely.
-      
+      You are an expert video scriptwriter. The video title and description are:
       Title: {title}
       Description: {description}
+      
+      If the text only contains hashtags or is empty, generate an engaging, captivating short story or narration script in fluent Myanmar (Burmese) suitable for a short drama/recap video. Ignore hashtags. Write pure narrative sentences in Burmese.
       """
 
       response = model.generate_content(prompt)
