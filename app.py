@@ -159,42 +159,20 @@ if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့�
       audio_file = "myanmar_audio.mp3"
       tts.save(audio_file)
 
-      st.info(
-          "🎬 ၄။ မူလအသံဖျောက်ခြင်း၊ စာသားနေရာဝါးခြင်း (Blur) နှင့် မြန်မာအသံ"
-          " ပေါင်းစပ်ခြင်း..."
-      )
-      # FFmpeg ဖြင့် မူလအသံဖျောက် (-an)၊ အသစ်ထည့် (-i audio)၊ အောက်ခြေစာသားနေရာကို Blur လုပ်ရန် boxblur သုံးခြင်း
-      output_file = "final_dubbed_video.mp4"
-      # sample ffmpeg command: blur bottom area (where subtitles usually are) and replace audio
-      # y=ih-100:h=80:w=iw specifies a box at the bottom
-      ffmpeg_cmd = (
-          f"ffmpeg -y -i {input_file} -i {audio_file}"
-          " -vf 'boxblur=10:1:enable=\"between(t,0,100)\"' -c:v libx264"
-          " -c:a aac -map 0:v:0 -map 1:a:0 -shortest"
-          f" {output_file}"
-      )
+      st.success("🎉 အသံဖိုင်နှင့် ဇာတ်ညွှန်း အောင်မြင်စွာ ပြီးစီးပါပြီ။")
 
-      os.system(ffmpeg_cmd)
-
-      st.success("🎉 အောင်မြင်စွာ ပြီးဆုံးပါပြီ။")
-      st.subheader("📺 ရလဒ် ဗီဒီယိုဖိုင်:")
-      if os.path.exists(output_file):
-        st.video(output_file)
-        with open(output_file, "rb") as f:
-          st.download_button(
-              label="📥 ဗီဒီယိုကို သိမ်းဆည်းရန် (Download Video)",
-              data=f,
-              file_name="Myanmar_Dubbed_Video.mp4",
-              mime="video/mp4",
-          )
-      else:
-        # Fallback if ffmpeg command fails due to environment limits
-        st.warning(
-            "⚠️ Server တွင် FFmpeg အပြည့်အစုံ အလုပ်မလုပ်ပါက မူလဗီဒီယိုနှင့်"
-            " အသံသီးသန့်ကို အောက်တွင် ရယူနိုင်ပါသည်။"
-        )
+      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် အသံဖိုင်:")
+      if os.path.exists(input_file):
         st.video(input_file)
+      if os.path.exists(audio_file):
         st.audio(audio_file)
+        with open(audio_file, "rb") as f:
+          st.download_button(
+              label="📥 မြန်မာအသံဖိုင်ကို သိမ်းဆည်းရန် (Download Audio)",
+              data=f,
+              file_name="Myanmar_Voiceover.mp3",
+              mime="audio/mp3",
+          )
 
       if not (is_admin or is_vip):
         st.session_state.usage_count += 1
