@@ -3,12 +3,12 @@ import os
 import subprocess
 import google.generativeai as genai
 from gtts import gTTS
-from moviepy.editor import AudioFileClip, VideoFileClip
 import requests
 import streamlit as st
 
-# yt-dlp ကို နောက်ဆုံးရဗားရှင်းသို့ အလိုအလျောက် Update တင်ရန်
-subprocess.run(["pip", "install", "--upgrade", "yt-dlp"])
+# လိုအပ်သော package များကို အလိုအလျောက် Install လုပ်ရန်
+subprocess.run(["pip", "install", "--upgrade", "yt-dlp", "moviepy"])
+from moviepy.editor import AudioFileClip, VideoFileClip
 import yt_dlp
 
 st.set_page_config(
@@ -183,16 +183,13 @@ if st.button("🚀 Process & Generate Dubbed Video"):
       st.info("🗣️ ၃။ မြန်မာ AI အသံထုတ်ယူ၍ မူရင်းအသံဖျောက်ကာ ပေါင်းစပ်နေပါသည်...")
       audio_file = "myanmar_audio.mp3"
 
-      # အသံနှုန်း ရွေးချယ်မှု
       is_slow = True if "အနှေး" in voice_gender else False
       tts = gTTS(text=myanmar_script, lang="my", slow=is_slow)
       tts.save(audio_file)
 
-      # MoviePy ဖြင့် မူရင်းအသံဖြုတ်ပြီး မြန်မာအသံအသစ်ထည့်ခြင်း
       video_clip = VideoFileClip(input_file)
       audio_clip = AudioFileClip(audio_file)
 
-      # အသံနှင့် ဗီဒီယို အရှည်ညီညာစေရန် ပေါင်းစပ်ခြင်း
       final_clip = video_clip.set_audio(audio_clip)
       final_clip.write_videofile(
           output_file,
