@@ -153,7 +153,7 @@ if st.button("🚀 Process & Generate Voiceover"):
       ydl_opts = {
           "format": "mp4/best",
           "outtmpl": input_file,
-          "quiet": Type,
+          "quiet": True,  # ဒီနေရာမှာ Type အစား True လို့ ပြင်ပေးလိုက်ပါပြီ
           "no_warnings": True,
           "extractor_args": {"tiktok": {"webpage_download": True}},
           "http_headers": {
@@ -172,14 +172,12 @@ if st.button("🚀 Process & Generate Voiceover"):
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
       st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို မြန်မာလို ဆွဲဆောင်မှုရှိရှိ ရေးသားနေပါသည်...")
-
-      # ဟတ်ရှ်တက်တွေချည်းဖြစ်နေရင်တောင် အဓိပ္ပာယ်ရှိတဲ့ ဇာတ်လမ်းပုံစံဖြစ်အောင် ဖန်တီးပေးမယ့် Prompt
       prompt = f"""
       You are an expert video scriptwriter. The video title and description are:
       Title: {title}
       Description: {description}
       
-      If the text only contains hashtags or is empty, generate an engaging, captivating short story or narration script in fluent Myanmar (Burmese) suitable for a short drama/recap video. Ignore hashtags. Write pure narrative sentences in Burmese.
+      Generate an engaging, captivating short story or narration script in fluent Myanmar (Burmese) suitable for a short drama/recap video based on this title and description. Ignore hashtags and write a natural Burmese narrative.
       """
 
       response = model.generate_content(prompt)
