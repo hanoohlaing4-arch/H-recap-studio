@@ -28,7 +28,7 @@ ALL_VIP_KEYS = {**VIP_KEYS_DATABASE, **st.session_state.purchased_keys}
 
 st.sidebar.title("👑 VIP / Admin Panel")
 
-# ပြင်ဆင်ထားသော ဈေးနှုန်းဇယား
+# VIP ဈေးနှုန်းများ
 st.sidebar.markdown("### 💰 VIP ဈေးနှုန်းများ")
 st.sidebar.markdown("""
 * **၁ လ (30 Days):** 35,000 MMK / 300 THB
@@ -132,7 +132,12 @@ if st.button("Generate Recap"):
     try:
       if api_key:
         genai.configure(api_key=api_key)
-      model = genai.GenerativeModel("gemini-1.5-flash-latest")
+
+      # Model Name ပြင်ဆင်ထားသည့်နေရာ
+      try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+      except:
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
       st.info("Video အချက်အလက်များ ရယူနေပါသည်...")
       title, description = "", ""
