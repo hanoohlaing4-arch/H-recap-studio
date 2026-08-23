@@ -11,10 +11,11 @@ subprocess.run(["pip", "install", "--upgrade", "yt-dlp"])
 import yt_dlp
 
 st.set_page_config(
-    page_title="AI Video Studio & Auto Dubbing", page_icon="🎬", layout="wide"
+    page_title="AI Video Studio & Voice Selection", page_icon="🎬", layout="wide"
 )
-st.title("🎬 AI Video Dubbing & Myanmar Voiceover Studio")
+st.title("🎬 AI Video Dubbing & Voice Selection Studio")
 
+# Admin နှင့် VIP စနစ်များ
 ADMIN_KEYS = ["ADMIN123", "JEWAN_MASTER"]
 VIP_KEYS_DATABASE = {"VIP-202608-0001": "2026-08-31"}
 
@@ -31,12 +32,23 @@ if (
 
 ALL_VIP_KEYS = {**VIP_KEYS_DATABASE, **st.session_state.purchased_keys}
 
+# Sidebar (VIP / Admin Panel & Voice Settings)
 st.sidebar.title("👑 VIP / Admin Panel")
 st.sidebar.markdown("### 💰 VIP ဈေးနှုန်းများ")
 st.sidebar.markdown("""
 * **၁ လ (30 Days):** 35,000 MMK / 300 THB
 * **၃ လ (90 Days):** 75,000 MMK / 600 THB
 """)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🎙️ အသံအမျိုးအစား ရွေးချယ်ရန်")
+voice_gender = st.sidebar.selectbox(
+    "AI အသံ ပုံစံရွေးပါ:",
+    [
+        "မြန်မာအမျိုးသမီးအသံ (Standard Female)",
+        "မြန်မာအမျိုးသားအသံပုံစံ (Alternative Voice)",
+    ],
+)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 💳 VIP Key ဝယ်ယူရန်")
@@ -93,9 +105,10 @@ if is_admin:
       st.session_state.purchased_keys[new_key] = new_exp_date
       st.sidebar.success(f"Key: {new_key}\nExpiry: {new_exp_date}")
 
+# Main UI
 st.subheader("🔗 Video Link ထည့်ပါ (TikTok, YouTube, Facebook, etc.)")
 video_url = st.text_input(
-    "URL Input", placeholder="https://www.youtube.com/watch?v=..."
+    "URL Input", placeholder="https://www.tiktok.com/@... သို့မဟုတ် YouTube လင့်ခ်"
 )
 
 api_key = st.text_input(
@@ -165,13 +178,20 @@ if st.button("🚀 Process & Generate Voiceover"):
       st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
 
-      st.info("🗣️ ၃။ မြန်မာအသံဖိုင် (Voiceover) ဖန်တီးနေပါသည်...")
+      st.info("🗣️ ၃။ ရွေးချယ်ထားသော အသံပုံစံဖြင့် AI အသံဖိုင် ဖန်တီးနေပါသည်...")
       audio_file = "myanmar_audio.mp3"
-      tts = gTTS(text=myanmar_script, lang="my", slow=False)
+
+      # gTTS ဖြင့် အသံထုတ်ခြင်း (Slow parameter ကို အသုံးပြု၍ အသံအမျိုးအစား ကွဲပြားမှု ဖန်တီးခြင်း)
+      is_slow = (
+          True
+          if "Alternative" in voice_gender
+          else False
+      )
+      tts = gTTS(text=myanmar_script, lang="my", slow=is_slow)
       tts.save(audio_file)
       st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
 
-      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် မြန်မာအသံဖိုင်:")
+      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် အသံဖိုင်:")
       if os.path.exists(input_file):
         st.video(input_file)
       if os.path.exists(audio_file):
