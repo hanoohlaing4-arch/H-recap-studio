@@ -46,7 +46,7 @@ st.sidebar.markdown("""
 """)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎙️ အသံအမျိုးအစားနှင့် အမျိုးအစား ရွေးချယ်ရန်")
+st.sidebar.markdown("### 🎙️ အသံအမျိုးအစား ရွေးချယ်ရန်")
 voice_gender = st.sidebar.selectbox(
     "AI အသံ ပုံစံရွေးပါ:",
     ["👩 မိန်းကလေးအသံ (Female Voice)", "👨 ယောက်ကျားလေးအသံ (Male Voice)"],
@@ -113,7 +113,8 @@ video_url = st.text_input(
     "URL Input", placeholder="https://www.tiktok.com/@... သို့မဟုတ် YouTube လင့်ခ်"
 )
 
-api_key = st.text_input(
+# API Key Input
+entered_api_key = st.text_input(
     "Google AI Studio API Key ထည့်ပါ:", type="password"
 )
 st.markdown(
@@ -135,14 +136,12 @@ if st.button("🚀 Process & Generate Voiceover"):
     )
   elif not video_url:
     st.error("ကျေးဇူးပြု၍ Video Link ထည့်သွင်းပေးပါ။")
-  elif not (is_admin or is_vip) and not api_key:
-    st.error("ကျေးဇူးပြု၍ API Key ထည့်သွင်းပေးပါ။")
+  elif not entered_api_key:
+    st.error("ကျေးဇူးပြု၍ Google AI Studio API Key ထည့်သွင်းပေးပါ။")
   else:
     try:
-      if api_key:
-        genai.configure(api_key=api_key)
-
-      model = genai.GenerativeModel("gemini-1.5-flash")
+      # API Key ကို ဤနေရာတွင် တိုက်ရိုက် Configure လုပ်ပါသည်
+      genai.configure(api_key=entered_api_key.strip())
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
@@ -172,11 +171,13 @@ if st.button("🚀 Process & Generate Voiceover"):
           " စာသားပြောင်းလဲခြင်း (Transcript) ပြုလုပ်နေပါသည်..."
       )
 
-      # Extract audio from video using ffmpeg
+      # Extract audio using ffmpeg
       os.system(
           f"ffmpeg -y -i {input_file} -q:a 0 -map a {audio_extract}"
           " >/dev/null 2>&1"
       )
+
+      model = genai.GenerativeModel("gemini-1.5-flash")
 
       if os.path.exists(audio_extract) and os.path.getsize(audio_extract) > 0:
         st.info(
@@ -197,8 +198,6 @@ if st.button("🚀 Process & Generate Voiceover"):
         except:
           pass
       else:
-        # Fallback if audio extraction fails
-        st.info("🤖 အသံဖိုင် သီးသန့်မရရှိပါက အချက်အလက်များဖြင့် ဘာသာပြန်မည်...")
         prompt = (
             "Translate the core narrative context into fluent Myanmar"
             " (Burmese) voiceover script."
@@ -212,15 +211,7 @@ if st.button("🚀 Process & Generate Voiceover"):
       st.info("🗣️ ၄။ ရွေးချယ်ထားသော အသံပုံစံဖြင့် မြန်မာ AI အသံဖိုင် ဖန်တီးနေပါသည်...")
       final_audio_file = "myanmar_voiceover.mp3"
 
-      # gTTS doesn't natively have strict separate male/female voices, 
-      # but we can configure tone/speed or use standard options for distinction.
-      # (Note: gTTS uses Google Translate TTS backend which sounds natural for Myanmar).
-      is_slow = False
-      if "ယောက်ကျားလေး" in voice_gender:
-        # For male/female distinction simulation via gTTS or pitch if needed
-        is_slow = False
-
-      tts = gTTS(text=myanmar_script, lang="my", slow=is_slow)
+      tts = gTTS(text=myanmar_script, lang="my", slow=False)
       tts.save(final_audio_file)
       st.success("✅ အသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
 
@@ -242,6 +233,6 @@ if st.button("🚀 Process & Generate Voiceover"):
 
     except Exception as e:
       st.error(
-          f"အမှားအယွင်း ရှိပါသည်။ လင့်ခ်မှန်ကန်မှု ရှိမရှိ ထပ်စစ်ဆေးပေးပါ။"
-          f" Error: {str(e)}"
+          f"အမှားအယွင်း ရှိပါသည်။ API Key သို့မဟုတ် လင့်ခ်မှန်ကန်မှု"
+          f" ရှိမရှိ ထပ်စစ်ဆေးပေးပါ။ Error: {str(e)}"
       )
