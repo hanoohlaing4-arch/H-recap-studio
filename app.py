@@ -1,6 +1,7 @@
 import datetime
 import os
 import google.generativeai as genai
+import requests
 import streamlit as st
 import yt_dlp
 
@@ -27,12 +28,11 @@ ALL_VIP_KEYS = {**VIP_KEYS_DATABASE, **st.session_state.purchased_keys}
 
 st.sidebar.title("👑 VIP / Admin Panel")
 
-# ဈေးနှုန်း ပြင်ဆင်ထားသည့်နေရာ
+# ပြင်ဆင်ထားသော ဈေးနှုန်းဇယား
 st.sidebar.markdown("### 💰 VIP ဈေးနှုန်းများ")
 st.sidebar.markdown("""
-* **၁ လ (30 Days):** 35,000 MMK / 250 THB
-* **၃ လ (90 Days):** 70,000 MMK / 550THB
-* **၆ လ (180Days):** 105,000 MMK / 820THB
+* **၁ လ (30 Days):** 35,000 MMK / 300 THB
+* **၃ လ (90 Days):** 75,000 MMK / 600 THB
 """)
 
 st.sidebar.markdown("---")
@@ -135,20 +135,32 @@ if st.button("Generate Recap"):
       model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
       st.info("Video အချက်အလက်များ ရယူနေပါသည်...")
-      ydl_opts = {
-          "quiet": True,
-          "no_warnings": True,
-          "format": "best",
-          "user_agent": (
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-              " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-          ),
-          "referer": "https://www.tiktok.com/",
-      }
-      with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(video_url, download=False)
-        title = info.get("title", "Video")
-        description = info.get("description", "")
+      title, description = "", ""
+
+      if "tiktok.com" in video_url:
+        tt_res = requests.get(
+            f"https://www.tikwm.com/api/?url={video_url}"
+        ).json()
+        if tt_res.get("code") == 0:
+          title = tt_res["data"].get("title", "TikTok Video")
+          description = title
+        else:
+          raise Exception("TikTok Video ၏ အချက်အလက်များကို ရယူ၍ မရပါ။")
+      else:
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "format": "best",
+            "user_agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0"
+                " Safari/537.36"
+            ),
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+          info = ydl.extract_info(video_url, download=False)
+          title = info.get("title", "Video")
+          description = info.get("description", "")
 
       st.success(f"Video တွေ့ရှိပါသည်: {title}")
       st.info("AI Recap ရေးသားနေပါသည်...")
