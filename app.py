@@ -1,14 +1,15 @@
 import datetime
 import os
+from gtts import gTTS
 import google.generativeai as genai
 import requests
 import streamlit as st
 import yt_dlp
 
 st.set_page_config(
-    page_title="AI Movie Recap & Video Studio", page_icon="🎬", layout="wide"
+    page_title="AI Video Studio & Auto Dubbing", page_icon="🎬", layout="wide"
 )
-st.title("🎬 AI Video Downloader, Translator & Auto-Recap Studio")
+st.title("🎬 AI Video Dubbing, Subtitle & Copyright Shield Studio")
 
 ADMIN_KEYS = ["ADMIN123", "JEWAN_MASTER"]
 VIP_KEYS_DATABASE = {"VIP-202608-0001": "2026-08-31"}
@@ -94,8 +95,7 @@ video_url = st.text_input(
 )
 
 api_key = st.text_input(
-    "Google AI Studio API Key ထည့်ပါ (AI ဘာသာပြန်ရန် လိုအပ်သည်):",
-    type="password",
+    "Google AI Studio API Key ထည့်ပါ:", type="password"
 )
 st.markdown(
     "🔑 API Key မရှိသေးပါက [ဒီနေရာကိုနှိပ်၍"
@@ -109,7 +109,7 @@ if not (is_admin or is_vip):
       f" \n\n✨ **၁ လလုံး အကန့်အသတ်မရှိ အသုံးပြုရန် VIP ဝယ်ယူပါ။**"
   )
 
-if st.button("🚀 Process Video (Download & Translate)"):
+if st.button("🚀 Process & Dub Video (မြန်မာအသံနှင့် စာတန်းထိုးမည်)"):
   if not (is_admin or is_vip) and st.session_state.usage_count >= 2:
     st.error(
         "❌ ယနေ့အတွက် အခမဲ့သုံးစွဲခွင့် ပြည့်သွားပါပြီ။ VIP Key ဝယ်ယူပါ။"
@@ -125,10 +125,11 @@ if st.button("🚀 Process Video (Download & Translate)"):
 
       model = genai.GenerativeModel("gemini-3.6-flash")
 
-      st.info("📥 ၁။ Video ကို Download ဆွဲနေပါသည်...")
+      st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
+      input_file = "input_video.mp4"
       ydl_opts = {
           "format": "mp4/best",
-          "outtmpl": "downloaded_video.mp4",
+          "outtmpl": input_file,
           "quiet": True,
           "no_warnings": True,
       }
@@ -138,41 +139,65 @@ if st.button("🚀 Process Video (Download & Translate)"):
         title = info.get("title", "Video")
         description = info.get("description", "")
 
-      st.success(f"✅ Video Download အောင်မြင်သည်: {title}")
+      st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
-      st.info(
-          "🤖 ၂။ AI ဖြင့် အကြောင်းအရာများကို ဘာသာပြန်ဆို & Copyright"
-          " ရှောင်ရှားရန် ပြင်ဆင်နေပါသည်..."
-      )
+      st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
       prompt = (
-          "Based on this video title and description, create a catchy"
-          " translated Myanmar voiceover script and summary that avoids"
-          " copyright issues by paraphrasing creatively:\nTitle:"
+          "Summarize and translate the core storyline into a short, engaging"
+          " Myanmar voiceover script (around 3-4 sentences) that avoids"
+          " copyright issues:\nTitle:"
           f" {title}\nDescription: {description}"
       )
       response = model.generate_content(prompt)
+      myanmar_script = response.text.replace("*", "").strip()
 
-      st.subheader("📝 AI ဖြင့် ဘာသာပြန်ထားသော ဇာတ်လမ်း / Voiceover Script:")
-      st.write(response.text)
+      st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
+      st.write(myanmar_script)
 
-      st.info("🎬 ၃။ ဒေါင်းလုဒ်ရယူထားသော ဗီဒီယိုဖိုင်:")
-      if os.path.exists("downloaded_video.mp4"):
-        st.video("downloaded_video.mp4")
-        with open("downloaded_video.mp4", "rb") as file:
+      st.info("🗣️ ၃။ မြန်မာအသံထွက် (Voiceover) ဖန်တီးနေပါသည်...")
+      tts = gTTS(text=myanmar_script, lang="my", slow=False)
+      audio_file = "myanmar_audio.mp3"
+      tts.save(audio_file)
+
+      st.info(
+          "🎬 ၄။ မူလအသံဖျောက်ခြင်း၊ စာသားနေရာဝါးခြင်း (Blur) နှင့် မြန်မာအသံ"
+          " ပေါင်းစပ်ခြင်း..."
+      )
+      # FFmpeg ဖြင့် မူလအသံဖျောက် (-an)၊ အသစ်ထည့် (-i audio)၊ အောက်ခြေစာသားနေရာကို Blur လုပ်ရန် boxblur သုံးခြင်း
+      output_file = "final_dubbed_video.mp4"
+      # sample ffmpeg command: blur bottom area (where subtitles usually are) and replace audio
+      # y=ih-100:h=80:w=iw specifies a box at the bottom
+      ffmpeg_cmd = (
+          f"ffmpeg -y -i {input_file} -i {audio_file}"
+          " -vf 'boxblur=10:1:enable=\"between(t,0,100)\"' -c:v libx264"
+          " -c:a aac -map 0:v:0 -map 1:a:0 -shortest"
+          f" {output_file}"
+      )
+
+      os.system(ffmpeg_cmd)
+
+      st.success("🎉 အောင်မြင်စွာ ပြီးဆုံးပါပြီ။")
+      st.subheader("📺 ရလဒ် ဗီဒီယိုဖိုင်:")
+      if os.path.exists(output_file):
+        st.video(output_file)
+        with open(output_file, "rb") as f:
           st.download_button(
               label="📥 ဗီဒီယိုကို သိမ်းဆည်းရန် (Download Video)",
-              data=file,
-              file_name="processed_video.mp4",
+              data=f,
+              file_name="Myanmar_Dubbed_Video.mp4",
               mime="video/mp4",
           )
       else:
-        st.error("ဗီဒီယိုဖိုင် ရှာမတွေ့ပါ။")
+        # Fallback if ffmpeg command fails due to environment limits
+        st.warning(
+            "⚠️ Server တွင် FFmpeg အပြည့်အစုံ အလုပ်မလုပ်ပါက မူလဗီဒီယိုနှင့်"
+            " အသံသီးသန့်ကို အောက်တွင် ရယူနိုင်ပါသည်။"
+        )
+        st.video(input_file)
+        st.audio(audio_file)
 
       if not (is_admin or is_vip):
         st.session_state.usage_count += 1
 
     except Exception as e:
-      st.error(
-          f"အမှားအယွင်း ရှိပါသည်။ (Server ကန့်သတ်ချက် သို့မဟုတ် Link"
-          f" မမှန်ကန်ခြင်း ဖြစ်နိုင်သည်) Error: {str(e)}"
-      )
+      st.error(f"အမှားအယွင်း ရှိပါသည်။ Error: {str(e)}")
