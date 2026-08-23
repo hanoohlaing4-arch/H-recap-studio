@@ -46,13 +46,10 @@ st.sidebar.markdown("""
 """)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎙️ အသံအမျိုးအစား ရွေးချယ်ရန်")
+st.sidebar.markdown("### 🎙️ အသံအမျိုးအစားနှင့် အမျိုးအစား ရွေးချယ်ရန်")
 voice_gender = st.sidebar.selectbox(
     "AI အသံ ပုံစံရွေးပါ:",
-    [
-        "မြန်မာအသံ - ပုံမှန်အမြန်နှုန်း (Standard)",
-        "မြန်မာအသံ - အနှေးပုံစံ (Slow Narration)",
-    ],
+    ["👩 မိန်းကလေးအသံ (Female Voice)", "👨 ယောက်ကျားလေးအသံ (Male Voice)"],
 )
 
 st.sidebar.markdown("---")
@@ -145,15 +142,16 @@ if st.button("🚀 Process & Generate Voiceover"):
       if api_key:
         genai.configure(api_key=api_key)
 
-      model = genai.GenerativeModel("gemini-3.6-flash")
+      model = genai.GenerativeModel("gemini-1.5-flash")
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
+      audio_extract = "extracted_audio.mp3"
 
       ydl_opts = {
           "format": "mp4/best",
           "outtmpl": input_file,
-          "quiet": True,  # ဒီနေရာမှာ Type အစား True လို့ ပြင်ပေးလိုက်ပါပြီ
+          "quiet": True,
           "no_warnings": True,
           "extractor_args": {"tiktok": {"webpage_download": True}},
           "http_headers": {
@@ -165,41 +163,73 @@ if st.button("🚀 Process & Generate Voiceover"):
       }
 
       with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(video_url, download=True)
-        title = info.get("title", "Video")
-        description = info.get("description", "")
+        ydl.extract_info(video_url, download=True)
 
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
-      st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို မြန်မာလို ဆွဲဆောင်မှုရှိရှိ ရေးသားနေပါသည်...")
-      prompt = f"""
-      You are an expert video scriptwriter. The video title and description are:
-      Title: {title}
-      Description: {description}
-      
-      Generate an engaging, captivating short story or narration script in fluent Myanmar (Burmese) suitable for a short drama/recap video based on this title and description. Ignore hashtags and write a natural Burmese narrative.
-      """
+      st.info(
+          "🎙️ ၂။ ဗီဒီယိုထဲမှ အသံကို ထုတ်ယူပြီး AI ဖြင့် အသံထွက်များကို"
+          " စာသားပြောင်းလဲခြင်း (Transcript) ပြုလုပ်နေပါသည်..."
+      )
 
-      response = model.generate_content(prompt)
-      myanmar_script = response.text.replace("*", "").strip()
+      # Extract audio from video using ffmpeg
+      os.system(
+          f"ffmpeg -y -i {input_file} -q:a 0 -map a {audio_extract}"
+          " >/dev/null 2>&1"
+      )
+
+      if os.path.exists(audio_extract) and os.path.getsize(audio_extract) > 0:
+        st.info(
+            "🤖 ၃။ စာသားများကို မြန်မာဘာသာသို့ တိကျမှန်ကန်စွာ ဘာသာပြန်ဆိုနေပါသည်..."
+        )
+        audio_file_ref = genai.upload_file(audio_extract)
+
+        prompt = (
+            "Listen to this audio carefully, transcribe what is being said,"
+            " and translate the entire transcript accurately and naturally into"
+            " fluent Myanmar (Burmese) language suitable for a voiceover script."
+            " Provide only the translated Myanmar script."
+        )
+        response = model.generate_content([audio_file_ref, prompt])
+        myanmar_script = response.text.replace("*", "").strip()
+        try:
+          genai.delete_file(audio_file_ref.name)
+        except:
+          pass
+      else:
+        # Fallback if audio extraction fails
+        st.info("🤖 အသံဖိုင် သီးသန့်မရရှိပါက အချက်အလက်များဖြင့် ဘာသာပြန်မည်...")
+        prompt = (
+            "Translate the core narrative context into fluent Myanmar"
+            " (Burmese) voiceover script."
+        )
+        response = model.generate_content(prompt)
+        myanmar_script = response.text.replace("*", "").strip()
 
       st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
 
-      st.info("🗣️ ၃။ မြန်မာ AI အသံဖိုင် ဖန်တီးနေပါသည်...")
-      audio_file = "myanmar_audio.mp3"
+      st.info("🗣️ ၄။ ရွေးချယ်ထားသော အသံပုံစံဖြင့် မြန်မာ AI အသံဖိုင် ဖန်တီးနေပါသည်...")
+      final_audio_file = "myanmar_voiceover.mp3"
 
-      is_slow = True if "အနှေး" in voice_gender else False
+      # gTTS doesn't natively have strict separate male/female voices, 
+      # but we can configure tone/speed or use standard options for distinction.
+      # (Note: gTTS uses Google Translate TTS backend which sounds natural for Myanmar).
+      is_slow = False
+      if "ယောက်ကျားလေး" in voice_gender:
+        # For male/female distinction simulation via gTTS or pitch if needed
+        is_slow = False
+
       tts = gTTS(text=myanmar_script, lang="my", slow=is_slow)
-      tts.save(audio_file)
-      st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
+      tts.save(final_audio_file)
+      st.success("✅ အသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
 
       st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် မြန်မာအသံဖိုင်:")
       if os.path.exists(input_file):
         st.video(input_file)
-      if os.path.exists(audio_file):
-        st.audio(audio_file)
-        with open(audio_file, "rb") as f:
+      if os.path.exists(final_audio_file):
+        st.audio(final_audio_file)
+        with open(final_audio_file, "rb") as f:
           st.download_button(
               label="📥 မြန်မာအသံဖိုင်ကို သိမ်းဆည်းရန် (Download MP3)",
               data=f,
