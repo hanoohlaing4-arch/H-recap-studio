@@ -1,7 +1,6 @@
 import datetime
 import os
 import subprocess
-import google.generativeai as genai
 from gtts import gTTS
 import requests
 import streamlit as st
@@ -113,6 +112,15 @@ video_url = st.text_input(
     "URL Input", placeholder="https://www.tiktok.com/@... သို့မဟုတ် YouTube လင့်ခ်"
 )
 
+# Groq API Key (သို့မဟုတ် OpenAI API Key) ထည့်ရန်
+entered_api_key = st.text_input(
+    "Groq API Key (သို့) OpenAI API Key ထည့်ပါ:", type="password"
+)
+st.markdown(
+    "🔑 Groq Key မရှိသေးပါက [ဒီနေရာမှာ အခမဲ့"
+    " ယူနိုင်ပါတယ်](https://console.groq.com/keys)"
+)
+
 if not (is_admin or is_vip):
   st.warning(
       f"⚠️ အခမဲ့ အသုံးပြုသူများအတွက် ၁ ရက်လျှင် ၂ ကြိမ်သာ"
@@ -127,9 +135,10 @@ if st.button("🚀 Process & Generate Voiceover"):
     )
   elif not video_url:
     st.error("ကျေးဇူးပြု၍ Video Link ထည့်သွင်းပေးပါ။")
+  elif not entered_api_key:
+    st.error("ကျေးဇူးပြု၍ API Key ထည့်သွင်းပေးပါ။")
   else:
     try:
-      # Free Public API Token သို့မဟုတ် Built-in fallback သုံးခြင်းဖြင့် Error ကင်းဝေးစေရန်
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
 
@@ -148,21 +157,45 @@ if st.button("🚀 Process & Generate Voiceover"):
       }
 
       with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(video_url, download=True)
-        title = info.get("title", "Recap Video")
-        description = info.get("description", "Interesting video content")
+        info = yt_dlp.YoutubeDL(ydl_opts).extract_info(video_url, download=True)
+        title = info.get("title", "Video Recap")
+        description = info.get("description", "")
 
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
-      st.info("🤖 ၂။ ဆွဲဆောင်မှုရှိသော မြန်မာဇာတ်ညွှန်း ရေးသားနေပါသည်...")
+      st.info("🤖 ၂။ Groq AI ဖြင့် ဆွဲဆောင်မှုရှိသော မြန်မာဇာတ်ညွှန်း ရေးသားနေပါသည်...")
 
-      # Gemini API မပါဘဲ ချက်ချင်းအလုပ်လုပ်ရန် တိုက်ရိုက်ဖန်တီးပေးသော Narrative Generator
-      myanmar_script = (
-          f"ဒီဗီဒီယိုလေးကတော့ '{title}' ဆိုတဲ့ အကြောင်းအရာနဲ့ ပတ်သက်ပြီး"
-          f" စိတ်ဝင်စားစရာကောင်းတဲ့ အချက်အလက်တွေကို တင်ဆက်ပေးထားတာ ဖြစ်ပါတယ်။"
-          f" ကြည့်ရှုသူတွေအနေနဲ့ အဆုံးအထိ စိတ်ဝင်တစားနဲ့ ကြည့်ရှုနိုင်မယ့်"
-          f" အကြောင်းအရာကောင်းလေးတစ်ခု ဖြစ်ပါတယ်ခင်ဗျာ။"
+      # Groq API (Llama 3) ကို အသုံးပြု၍ မြန်မာလို ဘာသာပြန်ဆိုခြင်း/ဇာတ်ညွှန်းထုတ်ခြင်း
+      headers = {
+          "Authorization": f"Bearer {entered_api_key.strip()}",
+          "Content-Type": "application/json",
+      }
+
+      prompt = f"""
+            Based on this video title: "{title}" and description: "{description}", 
+            write an engaging and captivating short story/narration script in fluent Myanmar (Burmese) language suitable for a recap video. Return only the Myanmar script.
+            """
+
+      json_data = {
+          "model": "llama-3.3-70b-versatile",
+          "messages": [{"role": "user", "content": prompt}],
+      }
+
+      response = requests.post(
+          "https://api.groq.com/openai/v1/chat/completions",
+          headers=headers,
+          json=json_data,
       )
+
+      if response.status_code == 200:
+        res_json = response.json()
+        myanmar_script = res_json["choices"][0]["message"]["content"].strip()
+      else:
+        # Fallback if API fails
+        myanmar_script = (
+            f"ဒီဗီဒီယိုလေးရဲ့ ခေါင်းစဉ်ကတော့ '{title}' ဖြစ်ပြီး"
+            f" စိတ်ဝင်စားစရာ အချက်အလက်များကို တင်ဆက်ထားပါတယ်။"
+        )
 
       st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
@@ -192,6 +225,6 @@ if st.button("🚀 Process & Generate Voiceover"):
 
     except Exception as e:
       st.error(
-          f"အမှားအယွင်း ရှိပါသည်။ လင့်ခ်မှန်ကန်မှု ရှိမရှိ ထပ်စစ်ဆေးပေးပါ။"
-          f" Error: {str(e)}"
+          f"အမှားအယွင်း ရှိပါသည်။ API Key သို့မဟုတ် လင့်ခ်မှန်ကန်မှု"
+          f" ရှိမရှိ စစ်ဆေးပါ။ Error: {str(e)}"
       )
