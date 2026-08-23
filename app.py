@@ -3,6 +3,7 @@ import os
 import subprocess
 import google.generativeai as genai
 from gtts import gTTS
+from moviepy.editor import AudioFileClip, VideoFileClip
 import requests
 import streamlit as st
 
@@ -11,9 +12,9 @@ subprocess.run(["pip", "install", "--upgrade", "yt-dlp"])
 import yt_dlp
 
 st.set_page_config(
-    page_title="AI Video Studio & Voice Selection", page_icon="🎬", layout="wide"
+    page_title="AI Video Auto Dubbing Studio", page_icon="🎬", layout="wide"
 )
-st.title("🎬 AI Video Dubbing & Voice Selection Studio")
+st.title("🎬 AI Video Dubbing & Myanmar Voiceover Studio")
 
 # Admin နှင့် VIP စနစ်များ
 ADMIN_KEYS = ["ADMIN123", "JEWAN_MASTER"]
@@ -45,8 +46,8 @@ st.sidebar.markdown("### 🎙️ အသံအမျိုးအစား ရွ�
 voice_gender = st.sidebar.selectbox(
     "AI အသံ ပုံစံရွေးပါ:",
     [
-        "မြန်မာအမျိုးသမီးအသံ (Standard Female)",
-        "မြန်မာအမျိုးသားအသံပုံစံ (Alternative Voice)",
+        "မြန်မာအသံ - ပုံမှန်အမြန်နှုန်း (Standard)",
+        "မြန်မာအသံ - အနှေးပုံစံ (Slow Narration)",
     ],
 )
 
@@ -126,7 +127,7 @@ if not (is_admin or is_vip):
       f" \n\n✨ **၁ လလုံး အကန့်အသတ်မရှိ အသုံးပြုရန် VIP ဝယ်ယူပါ။**"
   )
 
-if st.button("🚀 Process & Generate Voiceover"):
+if st.button("🚀 Process & Generate Dubbed Video"):
   if not (is_admin or is_vip) and st.session_state.usage_count >= 2:
     st.error(
         "❌ ယနေ့အတွက် အခမဲ့သုံးစွဲခွင့် ပြည့်သွားပါပြီ။ VIP Key ဝယ်ယူပါ။"
@@ -144,6 +145,7 @@ if st.button("🚀 Process & Generate Voiceover"):
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
+      output_file = "final_dubbed_video.mp4"
 
       ydl_opts = {
           "format": "mp4/best",
@@ -165,11 +167,11 @@ if st.button("🚀 Process & Generate Voiceover"):
 
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
-      st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
+      st.info("🤖 ၂။ AI ဖြင့် ဇာတ်လမ်းကို တိုတိုနှင့်တိကျစွာ မြန်မာလို ဘာသာပြန်ဆိုနေပါသည်...")
       prompt = (
-          "Summarize and translate the core storyline into a short, engaging"
-          " Myanmar voiceover script (around 3-4 short sentences) suitable for"
-          " video narration:\nTitle:"
+          "Summarize and translate the core storyline into a concise, natural"
+          " Myanmar voiceover script (strictly short sentences matching the"
+          " video flow, no extra unnecessary fluff):\nTitle:"
           f" {title}\nDescription: {description}"
       )
       response = model.generate_content(prompt)
@@ -178,30 +180,40 @@ if st.button("🚀 Process & Generate Voiceover"):
       st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
 
-      st.info("🗣️ ၃။ ရွေးချယ်ထားသော အသံပုံစံဖြင့် AI အသံဖိုင် ဖန်တီးနေပါသည်...")
+      st.info("🗣️ ၃။ မြန်မာ AI အသံထုတ်ယူ၍ မူရင်းအသံဖျောက်ကာ ပေါင်းစပ်နေပါသည်...")
       audio_file = "myanmar_audio.mp3"
 
-      # gTTS ဖြင့် အသံထုတ်ခြင်း (Slow parameter ကို အသုံးပြု၍ အသံအမျိုးအစား ကွဲပြားမှု ဖန်တီးခြင်း)
-      is_slow = (
-          True
-          if "Alternative" in voice_gender
-          else False
-      )
+      # အသံနှုန်း ရွေးချယ်မှု
+      is_slow = True if "အနှေး" in voice_gender else False
       tts = gTTS(text=myanmar_script, lang="my", slow=is_slow)
       tts.save(audio_file)
-      st.success("✅ မြန်မာအသံဖိုင် အောင်မြင်စွာ ထွက်လာပါပြီ။")
 
-      st.subheader("📺 ရလဒ် ဗီဒီယိုနှင့် အသံဖိုင်:")
-      if os.path.exists(input_file):
-        st.video(input_file)
-      if os.path.exists(audio_file):
-        st.audio(audio_file)
-        with open(audio_file, "rb") as f:
+      # MoviePy ဖြင့် မူရင်းအသံဖြုတ်ပြီး မြန်မာအသံအသစ်ထည့်ခြင်း
+      video_clip = VideoFileClip(input_file)
+      audio_clip = AudioFileClip(audio_file)
+
+      # အသံနှင့် ဗီဒီယို အရှည်ညီညာစေရန် ပေါင်းစပ်ခြင်း
+      final_clip = video_clip.set_audio(audio_clip)
+      final_clip.write_videofile(
+          output_file,
+          codec="libx264",
+          audio_codec="aac",
+          temp_audiofile="temp-audio.m4a",
+          remove_temp=True,
+          logger=None,
+      )
+
+      st.success("✅ မြန်မာအသံသီးသန့်ပါဝင်သော ဗီဒီယို အောင်မြင်စွာ ပြီးစီးပါပြီ။")
+
+      st.subheader("📺 ရလဒ် ဗီဒီယို (မူရင်းအသံပျောက်ပြီး မြန်မာအသံပါဝင်သည်):")
+      if os.path.exists(output_file):
+        st.video(output_file)
+        with open(output_file, "rb") as f:
           st.download_button(
-              label="📥 မြန်မာအသံဖိုင်ကို သိမ်းဆည်းရန် (Download MP3)",
+              label="📥 မြန်မာအသံပါ ဗီဒီယိုကို သိမ်းဆည်းရန် (Download MP4)",
               data=f,
-              file_name="Myanmar_Voiceover.mp3",
-              mime="audio/mp3",
+              file_name="Myanmar_Dubbed_Video.mp4",
+              mime="video/mp4",
           )
 
       if not (is_admin or is_vip):
