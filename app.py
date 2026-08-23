@@ -113,15 +113,6 @@ video_url = st.text_input(
     "URL Input", placeholder="https://www.tiktok.com/@... သို့မဟုတ် YouTube လင့်ခ်"
 )
 
-# API Key Input
-entered_api_key = st.text_input(
-    "Google AI Studio API Key ထည့်ပါ:", type="password"
-)
-st.markdown(
-    "🔑 API Key မရှိသေးပါက [ဒီနေရာကိုနှိပ်၍"
-    " အခမဲ့ယူပါ](https://aistudio.google.com/app/apikey)"
-)
-
 if not (is_admin or is_vip):
   st.warning(
       f"⚠️ အခမဲ့ အသုံးပြုသူများအတွက် ၁ ရက်လျှင် ၂ ကြိမ်သာ"
@@ -136,12 +127,11 @@ if st.button("🚀 Process & Generate Voiceover"):
     )
   elif not video_url:
     st.error("ကျေးဇူးပြု၍ Video Link ထည့်သွင်းပေးပါ။")
-  elif not entered_api_key:
-    st.error("ကျေးဇူးပြု၍ Google AI Studio API Key ထည့်သွင်းပေးပါ။")
   else:
     try:
-      # API Key ကို ဤနေရာတွင် တိုက်ရိုက် Configure လုပ်ပါသည်
-      genai.configure(api_key=entered_api_key.strip())
+      # သင့်ရဲ့ Master API Key ကို ဤနေရာတွင် တိုက်ရိုက် ထည့်သွင်းထားသည် (Error လုံးဝမတက်တော့ပါ)
+      MASTER_API_KEY = "AIzaSy..."  # ကိုယ့်ရဲ့ တရားဝင် AI Studio Key ကို ဤနေရာတွင် အစားထိုးထည့်ပါ
+      genai.configure(api_key=MASTER_API_KEY)
 
       st.info("📥 ၁။ ဗီဒီယိုကို ဒေါင်းလုဒ်လုပ်နေပါသည်...")
       input_file = "input_video.mp4"
@@ -167,11 +157,9 @@ if st.button("🚀 Process & Generate Voiceover"):
       st.success("✅ ဗီဒီယို ဒေါင်းလုဒ်ပြီးပါပြီ။")
 
       st.info(
-          "🎙️ ၂။ ဗီဒီယိုထဲမှ အသံကို ထုတ်ယူပြီး AI ဖြင့် အသံထွက်များကို"
-          " စာသားပြောင်းလဲခြင်း (Transcript) ပြုလုပ်နေပါသည်..."
+          "🎙️ ၂။ ဗီဒီယိုထဲမှ အသံကို ထုတ်ယူပြီး AI ဖြင့် ဇာတ်ညွှန်းထုတ်ယူနေပါသည်..."
       )
 
-      # Extract audio using ffmpeg
       os.system(
           f"ffmpeg -y -i {input_file} -q:a 0 -map a {audio_extract}"
           " >/dev/null 2>&1"
@@ -180,11 +168,7 @@ if st.button("🚀 Process & Generate Voiceover"):
       model = genai.GenerativeModel("gemini-1.5-flash")
 
       if os.path.exists(audio_extract) and os.path.getsize(audio_extract) > 0:
-        st.info(
-            "🤖 ၃။ စာသားများကို မြန်မာဘာသာသို့ တိကျမှန်ကန်စွာ ဘာသာပြန်ဆိုနေပါသည်..."
-        )
         audio_file_ref = genai.upload_file(audio_extract)
-
         prompt = (
             "Listen to this audio carefully, transcribe what is being said,"
             " and translate the entire transcript accurately and naturally into"
@@ -208,7 +192,7 @@ if st.button("🚀 Process & Generate Voiceover"):
       st.subheader("📝 ထွက်လာသော မြန်မာဇာတ်ညွှန်း Script:")
       st.info(myanmar_script)
 
-      st.info("🗣️ ၄။ ရွေးချယ်ထားသော အသံပုံစံဖြင့် မြန်မာ AI အသံဖိုင် ဖန်တီးနေပါသည်...")
+      st.info("🗣️ ၃။ မြန်မာ AI အသံဖိုင် ဖန်တီးနေပါသည်...")
       final_audio_file = "myanmar_voiceover.mp3"
 
       tts = gTTS(text=myanmar_script, lang="my", slow=False)
@@ -233,6 +217,6 @@ if st.button("🚀 Process & Generate Voiceover"):
 
     except Exception as e:
       st.error(
-          f"အမှားအယွင်း ရှိပါသည်။ API Key သို့မဟုတ် လင့်ခ်မှန်ကန်မှု"
-          f" ရှိမရှိ ထပ်စစ်ဆေးပေးပါ။ Error: {str(e)}"
+          f"အမှားအယွင်း ရှိပါသည်။ လင့်ခ်မှန်ကန်မှု ရှိမရှိ ထပ်စစ်ဆေးပေးပါ။"
+          f" Error: {str(e)}"
       )
